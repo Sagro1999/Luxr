@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="data.js?v=3"></script>
+  <script src="data.js?v=4"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -99,8 +99,8 @@
   <script type="text/babel">
     const { useState, useMemo } = React;
 
-    function calcLux(refLux, refDist, distance, modFactor, domeFactor, diffFactor) {
-      return refLux * (refDist * refDist / (distance * distance)) * modFactor * domeFactor * diffFactor;
+    function calcLux(refLux, refDist, distance, modFactor, diffFactor) {
+      return refLux * (refDist * refDist / (distance * distance)) * modFactor * diffFactor;
     }
     function luxToEV(lux, iso) {
       return Math.log2((Math.max(0.01, lux) * iso) / (12.5 * 250));
@@ -130,9 +130,8 @@
     function App() {
       const [lampId,     setLampId]     = useState("aputure_300d2");
       const [customLux,  setCustomLux]  = useState(5000);
-      const [modId,      setModId]      = useState("bare");
-      const [domeDiffId, setDomeDiffId] = useState("none");
-      const [diffId,     setDiffId]     = useState("none");
+      const [modId,  setModId]  = useState("bare");
+      const [diffId, setDiffId] = useState("none");
       const [distance,   setDistance]   = useState(2.0);
       const [dimmer,     setDimmer]     = useState(100);
       const [iso,        setIso]        = useState(800);
@@ -159,7 +158,6 @@
         setLampId(newId);
         const mods = window.LC_MODIFIERS_BY_LAMP[newId] || window.LC_MODIFIERS_BY_LAMP['custom'];
         setModId(mods[0].id);
-        setDomeDiffId("none");
       }
 
       const allLamps = useMemo(() => {
@@ -205,15 +203,12 @@
 
       const lamp          = allLamps.find(l => l.id === lampId) || allLamps[0];
       const modifier      = lampMods.find(m => m.id === modId)  || lampMods[0];
-      const domeDiff      = window.LC_DOME_DIFFUSIONS.find(d => d.id === domeDiffId) || window.LC_DOME_DIFFUSIONS[0];
       const extDiff       = window.LC_DIFFUSIONS.find(d => d.id === diffId);
       const shutter       = window.LC_SHUTTERS[shutterIdx];
       const ndFilter      = window.LC_ND_FILTERS.find(n => n.id === ndId);
       const ndStops       = ndFilter.stops;
       const ambientPreset = window.LC_AMBIENT_PRESETS[ambientIdx];
       const ambientLux    = ambientPreset.lux;
-
-      const domeFactor = modifier.domeDiffusion ? domeDiff.factor : 1.0;
 
       const effectiveRefLux = useMemo(() => {
         const base = lamp.id === "custom" ? customLux : (lamp.refLux || 0);
@@ -223,8 +218,8 @@
       const refDist = lamp.refDist || 1;
 
       const lampLux = useMemo(() =>
-        calcLux(effectiveRefLux, refDist, distance, modifier.factor, domeFactor, extDiff.factor),
-        [effectiveRefLux, refDist, distance, modifier, domeFactor, extDiff]
+        calcLux(effectiveRefLux, refDist, distance, modifier.factor, extDiff.factor),
+        [effectiveRefLux, refDist, distance, modifier, extDiff]
       );
 
       const totalLux      = lampLux + ambientLux;
@@ -243,11 +238,10 @@
         : null;
 
       // Stops-Bilanz: positiv = Gewinn, negativ = Verlust
-      const modStops    = Math.log2(modifier.factor);
-      const domeStops   = modifier.domeDiffusion && domeDiff.factor < 1 ? Math.log2(domeDiff.factor) : null;
-      const diffStops   = diffId !== "none" ? Math.log2(extDiff.factor) : null;
-      const dimStops    = dimmer < 100 ? Math.log2(dimmer / 100) : null;
-      const totalStops  = modStops + (domeStops||0) + (diffStops||0) + (dimStops||0);
+      const modStops   = Math.log2(modifier.factor);
+      const diffStops  = diffId !== "none" ? Math.log2(extDiff.factor) : null;
+      const dimStops   = dimmer < 100 ? Math.log2(dimmer / 100) : null;
+      const totalStops = modStops + (diffStops||0) + (dimStops||0);
 
       return (
         <div className="app">
@@ -289,14 +283,6 @@
             <select className="select" value={modId} onChange={e => setModId(e.target.value)}>
               {lampMods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
             </select>
-            {modifier.domeDiffusion && (
-              <div className="diffusion-block" style={{marginTop:10}}>
-                <div className="section-sublabel">Dome-Diffusionsstoff</div>
-                <select className="select" value={domeDiffId} onChange={e => setDomeDiffId(e.target.value)}>
-                  {window.LC_DOME_DIFFUSIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
-                </select>
-              </div>
-            )}
           </div>
 
           {/* Externe Diffusion */}
@@ -410,12 +396,6 @@
                 <span>Lichtformer ({modifier.label})</span>
                 <span className={modStops >= 0 ? "loss-val-gain" : "loss-val-loss"}>{fmtStops(modStops)} Bl.</span>
               </div>
-              {domeStops !== null && (
-                <div className="loss-row">
-                  <span>Dome-Diffusion</span>
-                  <span className="loss-val-loss">{fmtStops(domeStops)} Bl.</span>
-                </div>
-              )}
               {diffStops !== null && (
                 <div className="loss-row">
                   <span>{extDiff.label}</span>
