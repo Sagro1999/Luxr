@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LightCalc</title>
+  <title>GafferCalc</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -23,6 +23,7 @@
     .section-sublabel{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:#334155;text-transform:uppercase;margin-bottom:6px;margin-top:10px;}
     .select,.input{width:100%;background:#0f1724;border:1px solid #1e2a3a;border-radius:6px;color:#e2e8f0;font-family:'Inter',sans-serif;font-size:14px;padding:10px 14px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;}
     .select:focus,.input:focus{border-color:#00d4ff;}
+    .source-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#334155;letter-spacing:.06em;margin-top:6px;}
     .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     .diffusion-block{background:#0a1118;border:1px solid #2a3a50;border-radius:8px;padding:14px 16px;margin-top:4px;}
     .diff-badge{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;margin-top:6px;}
@@ -55,7 +56,11 @@
     .warn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#f97316;padding:10px 14px;border:1px solid #7c2d12;border-radius:6px;margin-top:16px;background:#1c0a00;}
     .loss-hint{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;margin-top:10px;line-height:1.6;}
     .loss-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #111827;}
-    .loss-total{display:flex;justify-content:space-between;padding-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94a3b8;}
+    .loss-val-gain{color:#84cc16;}
+    .loss-val-loss{color:#94a3b8;}
+    .loss-total{display:flex;justify-content:space-between;padding-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;}
+    .loss-total-gain{color:#84cc16;}
+    .loss-total-loss{color:#f97316;}
 
     /* Eigene Eintraege */
     .custom-section{margin-top:32px;border-top:1px solid #1e2a3a;padding-top:20px;}
@@ -78,7 +83,7 @@
     .del-btn{background:none;border:1px solid #2d1a1a;border-radius:4px;color:#4d2020;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;cursor:pointer;transition:all .15s;flex-shrink:0;}
     .del-btn:hover{border-color:#ef4444;color:#ef4444;}
     .entry-empty{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#2a3a50;padding:10px 0;text-align:center;}
-    .form-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#334155;margin-bottom:10px;line-height:1.5;}
+    .form-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#334155;margin-bottom:10px;line-height:1.6;}
 
     @media(max-width:500px){
       .grid-2,.params-grid{grid-template-columns:1fr;}
@@ -94,16 +99,8 @@
   <script type="text/babel">
     const { useState, useMemo } = React;
 
-    const BEAM_PRESETS = [
-      { label: "Sehr breit (Dome / Softbox)", beamFactor: 0.65 },
-      { label: "Breit (Bare Bulb)",           beamFactor: 1.00 },
-      { label: "Mittel (Reflektor)",          beamFactor: 1.60 },
-      { label: "Eng (Fresnel)",               beamFactor: 2.20 },
-      { label: "Sehr eng (Spotlight)",        beamFactor: 3.50 },
-    ];
-
-    function calcLux(lumens, distance, modFactor, beamFactor, domeFactor, diffFactor) {
-      return (lumens * modFactor * beamFactor * domeFactor * diffFactor) / (distance * distance);
+    function calcLux(lumens, distance, modFactor, domeFactor, diffFactor) {
+      return (lumens * modFactor * domeFactor * diffFactor) / (distance * distance);
     }
     function luxToEV(lux, iso) {
       return Math.log2((Math.max(0.01, lux) * iso) / (12.5 * 250));
@@ -118,6 +115,13 @@
       if (lux > 500)   return { text: "Weiches Portraitlicht",          color: "#22d3ee" };
       return                  { text: "Sehr weiches / schwaches Licht", color: "#818cf8" };
     }
+    // Vorzeichen-behaftete Blendenangabe: positiv = Gewinn, negativ = Verlust
+    function fmtStops(v) {
+      const abs = Math.abs(v).toFixed(2);
+      if (v >  0.005) return `+${abs}`;
+      if (v < -0.005) return `-${abs}`;
+      return `±0.00`;
+    }
     function loadLS(key) {
       try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
     }
@@ -126,8 +130,8 @@
     function App() {
       const [lampId,     setLampId]     = useState("aputure_300d2");
       const [customLm,   setCustomLm]   = useState(15000);
-      const [modId,      setModId]      = useState("ap_dome2");
-      const [domeDiffId, setDomeDiffId] = useState("inner");
+      const [modId,      setModId]      = useState("bare");
+      const [domeDiffId, setDomeDiffId] = useState("none");
       const [diffId,     setDiffId]     = useState("none");
       const [distance,   setDistance]   = useState(2.0);
       const [dimmer,     setDimmer]     = useState(100);
@@ -136,19 +140,26 @@
       const [ambientIdx, setAmbientIdx] = useState(0);
 
       // Eigene Eintraege (localStorage)
-      const [userLamps, setUserLamps]   = useState(() => loadLS("lc_lamps"));
-      const [userMods,  setUserMods]    = useState(() => loadLS("lc_mods"));
-      const [showPanel, setShowPanel]   = useState(false);
-      const [activeTab, setActiveTab]   = useState("lamps");
+      const [userLamps, setUserLamps] = useState(() => loadLS("lc_lamps"));
+      const [userMods,  setUserMods]  = useState(() => loadLS("lc_mods"));
+      const [showPanel, setShowPanel] = useState(false);
+      const [activeTab, setActiveTab] = useState("lamps");
 
       // Formular-State Lampe
       const [fLampName,   setFLampName]   = useState("");
       const [fLampLumens, setFLampLumens] = useState("");
 
       // Formular-State Lichtformer
-      const [fModName,     setFModName]     = useState("");
-      const [fModFactor,   setFModFactor]   = useState("0.70");
-      const [fModBeamIdx,  setFModBeamIdx]  = useState(2);
+      const [fModName,   setFModName]   = useState("");
+      const [fModFactor, setFModFactor] = useState("0.55");
+
+      // Beim Lampenwechsel Modifier auf ersten Eintrag der neuen Liste zuruecksetzen
+      function handleLampChange(newId) {
+        setLampId(newId);
+        const mods = window.LC_MODIFIERS_BY_LAMP[newId] || window.LC_MODIFIERS_BY_LAMP['custom'];
+        setModId(mods[0].id);
+        setDomeDiffId("none");
+      }
 
       const allLamps = useMemo(() => {
         const statics = window.LC_LAMPS.filter(l => l.id !== "custom");
@@ -156,11 +167,15 @@
         return [...statics, ...userLamps, manual];
       }, [userLamps]);
 
-      const allMods = useMemo(() => [...window.LC_MODIFIERS, ...userMods], [userMods]);
+      // Modifier-Liste ist lamp-spezifisch; eigene Modifier werden immer angehaengt
+      const lampMods = useMemo(() => {
+        const base = window.LC_MODIFIERS_BY_LAMP[lampId] || window.LC_MODIFIERS_BY_LAMP['custom'];
+        return [...base, ...userMods];
+      }, [lampId, userMods]);
 
       function addLamp() {
         if (!fLampName.trim() || !fLampLumens) return;
-        const item = { id: `ul_${Date.now()}`, label: fLampName.trim(), lumens: Number(fLampLumens) };
+        const item = { id: `ul_${Date.now()}`, label: fLampName.trim(), lumens: Number(fLampLumens), source: "eigene Angabe" };
         const next = [...userLamps, item];
         setUserLamps(next); saveLS("lc_lamps", next);
         setFLampName(""); setFLampLumens("");
@@ -168,19 +183,18 @@
       function removeLamp(id) {
         const next = userLamps.filter(l => l.id !== id);
         setUserLamps(next); saveLS("lc_lamps", next);
-        if (lampId === id) setLampId("aputure_300d2");
+        if (lampId === id) { setLampId("aputure_300d2"); setModId("bare"); }
       }
       function addMod() {
         if (!fModName.trim()) return;
-        const bp = BEAM_PRESETS[fModBeamIdx];
         const item = {
           id: `um_${Date.now()}`, label: fModName.trim(),
-          factor: Math.min(1, Math.max(0.01, Number(fModFactor))),
-          beamFactor: bp.beamFactor, domeDiffusion: false,
+          factor: Math.min(20, Math.max(0.01, Number(fModFactor))),
+          domeDiffusion: false,
         };
         const next = [...userMods, item];
         setUserMods(next); saveLS("lc_mods", next);
-        setFModName(""); setFModFactor("0.70"); setFModBeamIdx(2);
+        setFModName(""); setFModFactor("0.55");
       }
       function removeMod(id) {
         const next = userMods.filter(m => m.id !== id);
@@ -189,8 +203,8 @@
       }
 
       const lamp          = allLamps.find(l => l.id === lampId) || allLamps[0];
-      const modifier      = allMods.find(m => m.id === modId)   || allMods[0];
-      const domeDiff      = window.LC_DOME_DIFFUSIONS.find(d => d.id === domeDiffId);
+      const modifier      = lampMods.find(m => m.id === modId)  || lampMods[0];
+      const domeDiff      = window.LC_DOME_DIFFUSIONS.find(d => d.id === domeDiffId) || window.LC_DOME_DIFFUSIONS[0];
       const extDiff       = window.LC_DIFFUSIONS.find(d => d.id === diffId);
       const shutter       = window.LC_SHUTTERS[shutterIdx];
       const ambientPreset = window.LC_AMBIENT_PRESETS[ambientIdx];
@@ -199,12 +213,12 @@
       const domeFactor = modifier.domeDiffusion ? domeDiff.factor : 1.0;
 
       const effectiveLumens = useMemo(() => {
-        const base = lamp.id === "custom" ? customLm : lamp.lumens;
-        return (base || 0) * (dimmer / 100);
+        const base = lamp.id === "custom" ? customLm : (lamp.lumens || 0);
+        return base * (dimmer / 100);
       }, [lamp, customLm, dimmer]);
 
       const lampLux = useMemo(() =>
-        calcLux(effectiveLumens, distance, modifier.factor, modifier.beamFactor, domeFactor, extDiff.factor),
+        calcLux(effectiveLumens, distance, modifier.factor, domeFactor, extDiff.factor),
         [effectiveLumens, distance, modifier, domeFactor, extDiff]
       );
 
@@ -222,30 +236,27 @@
             : `1 : ${(ambientLux / lampLux).toFixed(1)}`)
         : null;
 
-      const lossModifier = -(Math.log2(modifier.factor * modifier.beamFactor)).toFixed(2);
-      const lossDome     = modifier.domeDiffusion && domeDiff.factor < 1 ? -(Math.log2(domeDiff.factor)).toFixed(2) : null;
-      const lossDiff     = diffId !== "none" ? -(Math.log2(extDiff.factor)).toFixed(2) : null;
-      const lossDimmer   = dimmer < 100 ? -(Math.log2(dimmer / 100)).toFixed(2) : null;
-      const lossTotal    = (
-        parseFloat(lossModifier) +
-        (lossDome   ? parseFloat(lossDome)   : 0) +
-        (lossDiff   ? parseFloat(lossDiff)   : 0) +
-        (lossDimmer ? parseFloat(lossDimmer) : 0)
-      ).toFixed(2);
+      // Stops-Bilanz: positiv = Gewinn, negativ = Verlust
+      const modStops    = Math.log2(modifier.factor);
+      const domeStops   = modifier.domeDiffusion && domeDiff.factor < 1 ? Math.log2(domeDiff.factor) : null;
+      const diffStops   = diffId !== "none" ? Math.log2(extDiff.factor) : null;
+      const dimStops    = dimmer < 100 ? Math.log2(dimmer / 100) : null;
+      const totalStops  = modStops + (domeStops||0) + (diffStops||0) + (dimStops||0);
 
       return (
         <div className="app">
           <div className="header">
-            <div className="header-eyebrow">Photometric Calculator &middot; LED</div>
-            <h1>Light<span>Calc</span></h1>
+            <div className="header-eyebrow">Photometric Calculator &middot; Gaffer</div>
+            <h1>Gaffer<span>Calc</span></h1>
           </div>
 
           {/* Lichtquelle */}
           <div className="section">
             <div className="section-label">Lichtquelle</div>
-            <select className="select" value={lampId} onChange={e => setLampId(e.target.value)}>
+            <select className="select" value={lampId} onChange={e => handleLampChange(e.target.value)}>
               {allLamps.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
             </select>
+            {lamp.source && <div className="source-hint">Quelle: {lamp.source}</div>}
           </div>
 
           {lamp.id === "custom" && (
@@ -270,7 +281,7 @@
           <div className="section">
             <div className="section-label">Lichtformer</div>
             <select className="select" value={modId} onChange={e => setModId(e.target.value)}>
-              {allMods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+              {lampMods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
             </select>
             {modifier.domeDiffusion && (
               <div className="diffusion-block" style={{marginTop:10}}>
@@ -291,7 +302,7 @@
               </select>
               {diffId !== "none" && (
                 <div className="diff-badge">
-                  Lichtverlust: <span>-{Math.abs(Math.log2(extDiff.factor)).toFixed(2)} Blenden</span>
+                  Verlust: <span>{fmtStops(Math.log2(extDiff.factor))} Bl.</span>
                 </div>
               )}
             </div>
@@ -317,14 +328,8 @@
               <span className="slider-val ambient-val">{ambientPreset.label}</span>
             </div>
             <div className="ambient-meta">
-              <span className="ambient-lux">
-                {ambientPreset.lux > 0
-                  ? `${ambientPreset.lux.toLocaleString("de-DE")} lux`
-                  : "0 lux"}
-              </span>
-              {lightRatio && (
-                <span className="ratio-badge">Licht : Ambient = {lightRatio}</span>
-              )}
+              <span className="ambient-lux">{ambientPreset.lux > 0 ? `${ambientPreset.lux.toLocaleString("de-DE")} lux` : "0 lux"}</span>
+              {lightRatio && <span className="ratio-badge">Licht : Ambient = {lightRatio}</span>}
             </div>
           </div>
 
@@ -385,11 +390,32 @@
             <hr className="divider" />
 
             <div className="loss-hint">
-              <div className="loss-row"><span>Lichtformer</span><span>-{lossModifier} Bl.</span></div>
-              {lossDome   && <div className="loss-row"><span>Dome-Diffusion</span><span>-{lossDome} Bl.</span></div>}
-              {lossDiff   && <div className="loss-row"><span>{extDiff.label}</span><span>-{lossDiff} Bl.</span></div>}
-              {lossDimmer && <div className="loss-row"><span>Dimmer ({dimmer}%)</span><span>-{lossDimmer} Bl.</span></div>}
-              <div className="loss-total"><span>Gesamtverlust</span><span>-{lossTotal} Bl.</span></div>
+              <div className="loss-row">
+                <span>Lichtformer ({modifier.label})</span>
+                <span className={modStops >= 0 ? "loss-val-gain" : "loss-val-loss"}>{fmtStops(modStops)} Bl.</span>
+              </div>
+              {domeStops !== null && (
+                <div className="loss-row">
+                  <span>Dome-Diffusion</span>
+                  <span className="loss-val-loss">{fmtStops(domeStops)} Bl.</span>
+                </div>
+              )}
+              {diffStops !== null && (
+                <div className="loss-row">
+                  <span>{extDiff.label}</span>
+                  <span className="loss-val-loss">{fmtStops(diffStops)} Bl.</span>
+                </div>
+              )}
+              {dimStops !== null && (
+                <div className="loss-row">
+                  <span>Dimmer ({dimmer}%)</span>
+                  <span className="loss-val-loss">{fmtStops(dimStops)} Bl.</span>
+                </div>
+              )}
+              <div className={`loss-total ${totalStops >= 0 ? "loss-total-gain" : "loss-total-loss"}`}>
+                <span>Gesamt</span>
+                <span>{fmtStops(totalStops)} Bl.</span>
+              </div>
             </div>
 
             <hr className="divider" />
@@ -430,7 +456,7 @@
 
                 {activeTab === "lamps" && (
                   <div>
-                    <div className="form-hint">Name + Lumen-Angabe aus Datenblatt</div>
+                    <div className="form-hint">Name + Lumen-Angabe aus Datenblatt (bare bulb @1m oder @3m)</div>
                     <div className="form-row">
                       <input className="input" placeholder="Name (z.B. Godox SZ150R)" value={fLampName}
                         onChange={e => setFLampName(e.target.value)}
@@ -456,19 +482,15 @@
                 {activeTab === "mods" && (
                   <div>
                     <div className="form-hint">
-                      Effizienz: Anteil des Lichts der ankommt (0.10 = 10%, 1.00 = 100%) &mdash; Strahl: wie stark das Licht gebuendelt wird
+                      Faktor 1.0 = bare. &gt;1 = Gewinn (Reflektor, Fresnel). &lt;1 = Verlust (Softbox, Dome, Lantern).
                     </div>
                     <div className="form-row">
-                      <input className="input" placeholder="Name (z.B. Meine Octabox)" value={fModName}
+                      <input className="input" placeholder="Name (z.B. Meine Octabox 150)" value={fModName}
                         onChange={e => setFModName(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && addMod()} />
-                      <input className="input form-narrow" type="number" step="0.05" min="0.05" max="1.00"
-                        placeholder="Effizienz 0.05–1.00" value={fModFactor}
+                      <input className="input form-narrow" type="number" step="0.05" min="0.01" max="20"
+                        placeholder="Faktor (z.B. 0.40)" value={fModFactor}
                         onChange={e => setFModFactor(e.target.value)} />
-                      <select className="select form-narrow" value={fModBeamIdx}
-                        onChange={e => setFModBeamIdx(Number(e.target.value))}>
-                        {BEAM_PRESETS.map((b,i) => <option key={i} value={i}>{b.label}</option>)}
-                      </select>
                       <button className="add-btn" onClick={addMod}>+ Hinzufuegen</button>
                     </div>
                     <div className="entry-list">
@@ -476,7 +498,7 @@
                       {userMods.map(m => (
                         <div key={m.id} className="entry-item">
                           <span className="entry-name">{m.label}</span>
-                          <span className="entry-meta">{(m.factor * 100).toFixed(0)}% eff. &middot; Strahl x{m.beamFactor}</span>
+                          <span className="entry-meta">Faktor {m.factor} ({fmtStops(Math.log2(m.factor))} Bl.)</span>
                           <button className="del-btn" onClick={() => removeMod(m.id)}>x</button>
                         </div>
                       ))}
