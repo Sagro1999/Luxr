@@ -1,13 +1,13 @@
 window.LC_LAMPS = [
-  { id: "aputure_1200d",     label: "Aputure 1200d Pro",      lumens: 360000, source: "bare @3m gemessen"  },
-  { id: "aputure_600d",      label: "Aputure 600d Pro",       lumens: 139000, source: "bare @1m gemessen"  },
-  { id: "aputure_300d2",     label: "Aputure 300d II",        lumens: 69000,  source: "bare @1m gemessen"  },
-  { id: "aputure_storm80c",  label: "Aputure STORM 80c",      lumens: 40850,  source: "bare @1m gemessen"  },
-  { id: "nanlux_2400b",      label: "Nanlux Evoke 2400B",     lumens: 541000, source: "bare @3m gemessen"  },
-  { id: "godox_sl200ii",     label: "Godox SL200II",          lumens: 13000,  source: "Herstellerangabe"   },
-  { id: "godox_sl60ii",      label: "Godox SL60IID",          lumens: 4500,   source: "Herstellerangabe"   },
-  { id: "arri_skypanel_s60", label: "ARRI SkyPanel S60-C",    lumens: 28000,  source: "Herstellerangabe"   },
-  { id: "custom",            label: "── Manuelle Eingabe ──", lumens: null,   source: ""                   },
+  { id: "aputure_1200d",     label: "Aputure 1200d Pro",      refLux: 6380,  refDist: 3, source: "bare @3m gemessen"  },
+  { id: "aputure_600d",      label: "Aputure 600d Pro",       refLux: 22150, refDist: 1, source: "bare @1m gemessen"  },
+  { id: "aputure_300d2",     label: "Aputure 300d II",        refLux: 11000, refDist: 1, source: "bare @1m gemessen"  },
+  { id: "aputure_storm80c",  label: "Aputure STORM 80c",      refLux: 6502,  refDist: 1, source: "bare @1m gemessen"  },
+  { id: "nanlux_2400b",      label: "Nanlux Evoke 2400B",     refLux: 9584,  refDist: 3, source: "bare @3m gemessen"  },
+  { id: "godox_sl200ii",     label: "Godox SL200II",          refLux: 13000, refDist: 1, source: "Herstellerangabe"   },
+  { id: "godox_sl60ii",      label: "Godox SL60IID",          refLux: 4500,  refDist: 1, source: "Herstellerangabe"   },
+  { id: "arri_skypanel_s60", label: "ARRI SkyPanel S60-C",    refLux: 28000, refDist: 1, source: "Herstellerangabe"   },
+  { id: "custom",            label: "── Manuelle Eingabe ──", refLux: null,  refDist: 1, source: ""                   },
 ];
 
 window.LC_MODIFIERS_BY_LAMP = {
