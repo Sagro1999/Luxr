@@ -99,6 +99,19 @@ window.LC_DIFFUSIONS = [
   { id: "light_grid",    label: "Light Grid Cloth (~0.15 Bl.)", factor: 0.90  },
 ];
 
+window.LC_ND_FILTERS = [
+  { id: "none",  label: "Kein ND",           stops: 0  },
+  { id: "nd03",  label: "ND 0.3  — 1 Stop",  stops: 1  },
+  { id: "nd06",  label: "ND 0.6  — 2 Stop",  stops: 2  },
+  { id: "nd09",  label: "ND 0.9  — 3 Stop",  stops: 3  },
+  { id: "nd12",  label: "ND 1.2  — 4 Stop",  stops: 4  },
+  { id: "nd15",  label: "ND 1.5  — 5 Stop",  stops: 5  },
+  { id: "nd18",  label: "ND 1.8  — 6 Stop",  stops: 6  },
+  { id: "nd21",  label: "ND 2.1  — 7 Stop",  stops: 7  },
+  { id: "nd24",  label: "ND 2.4  — 8 Stop",  stops: 8  },
+  { id: "nd30",  label: "ND 3.0  — 10 Stop", stops: 10 },
+];
+
 window.LC_AMBIENT_PRESETS = [
   { label: "Vollnacht",        lux: 0      },
   { label: "Mondlicht",        lux: 1      },
@@ -115,12 +128,12 @@ window.LC_AMBIENT_PRESETS = [
 window.LC_APERTURES = [1.0,1.2,1.4,1.7,2.0,2.4,2.8,3.3,4.0,4.8,5.6,6.7,8,9.5,11,13,16,19,22];
 
 window.LC_SHUTTERS = [
-  {label:"1/8000",val:1/8000},{label:"1/4000",val:1/4000},{label:"1/2000",val:1/2000},
-  {label:"1/1000",val:1/1000},{label:"1/500",val:1/500},{label:"1/250",val:1/250},
+  {label:"1/8000",val:1/8000},{label:"1/4000",val:1/4000},{label:"1/2000",val:1/2000},{label:"1/1600",val:1/1600},
+  {label:"1/1000",val:1/1000},{label:"1/800",val:1/800},{label:"1/500",val:1/500},{label:"1/250",val:1/250},
   {label:"1/200",val:1/200},{label:"1/125",val:1/125},{label:"1/100",val:1/100},
   {label:"1/60",val:1/60},{label:"1/50",val:1/50},{label:"1/30",val:1/30},
   {label:"1/25",val:1/25},{label:"1/15",val:1/15},{label:"1/8",val:1/8},
   {label:"1/4",val:1/4},{label:"1/2",val:1/2},{label:"1s",val:1},
 ];
 
-window.LC_ISO_VALUES = [100,200,400,800,1600,3200,6400,12800];
+window.LC_ISO_VALUES = [100,200,300,400,600,800,1600,3200,6400,12800];

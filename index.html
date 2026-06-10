@@ -7,7 +7,7 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="data.js?v=2"></script>
+  <script src="data.js?v=3"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
@@ -137,6 +137,7 @@
       const [dimmer,     setDimmer]     = useState(100);
       const [iso,        setIso]        = useState(800);
       const [shutterIdx, setShutterIdx] = useState(10);
+      const [ndId,       setNdId]       = useState("none");
       const [ambientIdx, setAmbientIdx] = useState(0);
 
       // Eigene Eintraege (localStorage) — alte Eintraege mit lumens-Format filtern
@@ -207,6 +208,8 @@
       const domeDiff      = window.LC_DOME_DIFFUSIONS.find(d => d.id === domeDiffId) || window.LC_DOME_DIFFUSIONS[0];
       const extDiff       = window.LC_DIFFUSIONS.find(d => d.id === diffId);
       const shutter       = window.LC_SHUTTERS[shutterIdx];
+      const ndFilter      = window.LC_ND_FILTERS.find(n => n.id === ndId);
+      const ndStops       = ndFilter.stops;
       const ambientPreset = window.LC_AMBIENT_PRESETS[ambientIdx];
       const ambientLux    = ambientPreset.lux;
 
@@ -226,7 +229,8 @@
 
       const totalLux      = lampLux + ambientLux;
       const ev            = useMemo(() => luxToEV(totalLux, iso), [totalLux, iso]);
-      const exactAperture = useMemo(() => evToAperture(ev, shutter.val, iso), [ev, shutter, iso]);
+      const exactAperture = useMemo(() => evToAperture(ev - ndStops, shutter.val, iso), [ev, ndStops, shutter, iso]);
+      const exactApertureNoNd = ndStops > 0 ? evToAperture(ev, shutter.val, iso) : null;
       const closestF      = useMemo(() => findClosestAperture(exactAperture), [exactAperture]);
       const tStop         = fToTStop(exactAperture);
       const luxInfo       = luxLabel(totalLux);
@@ -335,7 +339,7 @@
             </div>
           </div>
 
-          {/* ISO + Verschlusszeit */}
+          {/* ISO + Verschlusszeit + ND */}
           <div className="section grid-2">
             <div>
               <div className="section-label">ISO</div>
@@ -349,6 +353,12 @@
                 {window.LC_SHUTTERS.map((s,i) => <option key={i} value={i}>{s.label}s</option>)}
               </select>
             </div>
+          </div>
+          <div className="section">
+            <div className="section-label">ND-Filter (Kamera)</div>
+            <select className="select" value={ndId} onChange={e => setNdId(e.target.value)}>
+              {window.LC_ND_FILTERS.map(n => <option key={n.id} value={n.id}>{n.label}</option>)}
+            </select>
           </div>
 
           {/* Ergebnis */}
@@ -368,14 +378,18 @@
 
             <div className="params-grid">
               <div>
-                <div className="param-label">Blende (Foto)</div>
+                <div className="param-label">Blende{ndStops > 0 ? ` (mit ND ${ndFilter.label.split('—')[0].trim()})` : " (Foto)"}</div>
                 <div className="param-value">f/{closestF}</div>
-                <div className="param-sub">exakt f/{exactAperture.toFixed(2)}</div>
+                <div className="param-sub">
+                  {exactApertureNoNd
+                    ? `exakt f/${exactAperture.toFixed(2)} · ohne ND: f/${exactApertureNoNd.toFixed(2)}`
+                    : `exakt f/${exactAperture.toFixed(2)}`}
+                </div>
               </div>
               <div>
-                <div className="param-label">T-Stop (Video)</div>
+                <div className="param-label">T-Stop{ndStops > 0 ? " (mit ND)" : " (Video)"}</div>
                 <div className="param-value">T/{tStop}</div>
-                <div className="param-sub">ca. +1/3 EV Linsenverlust</div>
+                <div className="param-sub">{ndStops > 0 ? `${ndStops} Stop ND` : "ca. +1/3 EV Linsenverlust"}</div>
               </div>
               <div>
                 <div className="param-label">EV (Belichtungswert)</div>
