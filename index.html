@@ -175,7 +175,7 @@
 
       function addLamp() {
         if (!fLampName.trim() || !fLampLux) return;
-        const item = { id: `ul_${Date.now()}`, label: fLampName.trim(), refLux: Number(fLampLux), refDist: 1, source: "eigene Angabe @1m" };
+        const item = { id: `ul_${Date.now()}`, label: fLampName.trim(), refLux: Number(fLampLux), refDist: 3, source: "eigene Angabe @3m" };
         const next = [...userLamps, item];
         setUserLamps(next); saveLS("lc_lamps", next);
         setFLampName(""); setFLampLux("");
@@ -458,12 +458,12 @@
 
                 {activeTab === "lamps" && (
                   <div>
-                    <div className="form-hint">Gemessene Lux bare bulb @1m eingeben (Datenblatt oder eigene Messung)</div>
+                    <div className="form-hint">Gemessene Lux bare bulb @3m eingeben (Datenblatt oder eigene Messung)</div>
                     <div className="form-row">
                       <input className="input" placeholder="Name (z.B. Godox SZ150R)" value={fLampName}
                         onChange={e => setFLampName(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && addLamp()} />
-                      <input className="input form-narrow" type="number" placeholder="Lux @1m"
+                      <input className="input form-narrow" type="number" placeholder="Lux @3m"
                         value={fLampLux} onChange={e => setFLampLux(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && addLamp()} />
                       <button className="add-btn" onClick={addLamp}>+ Hinzufuegen</button>
