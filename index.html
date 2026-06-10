@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LightCalc</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="data.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{background:#080b10;color:#e2e8f0;font-family:'Inter',sans-serif;min-height:100vh;}
+    .app{max-width:780px;margin:0 auto;padding:32px 20px 80px;}
+    .header{margin-bottom:40px;border-bottom:1px solid #1e2a3a;padding-bottom:24px;}
+    .header-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;color:#00d4ff;text-transform:uppercase;margin-bottom:8px;}
+    .header h1{font-size:26px;font-weight:300;letter-spacing:-.02em;color:#f1f5f9;}
+    .header h1 span{font-weight:600;color:#00d4ff;}
+    .section{margin-bottom:24px;}
+    .section-label{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#475569;text-transform:uppercase;margin-bottom:8px;}
+    .section-sublabel{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:#334155;text-transform:uppercase;margin-bottom:6px;margin-top:10px;}
+    .select,.input{width:100%;background:#0f1724;border:1px solid #1e2a3a;border-radius:6px;color:#e2e8f0;font-family:'Inter',sans-serif;font-size:14px;padding:10px 14px;outline:none;transition:border-color .15s;appearance:none;-webkit-appearance:none;}
+    .select:focus,.input:focus{border-color:#00d4ff;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .diffusion-block{background:#0a1118;border:1px solid #2a3a50;border-radius:8px;padding:14px 16px;margin-top:4px;}
+    .diff-badge{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;margin-top:6px;}
+    .diff-badge span{background:#0f1724;border:1px solid #1e2a3a;padding:2px 7px;border-radius:4px;color:#94a3b8;}
+    .slider-wrap{display:flex;align-items:center;gap:14px;}
+    .slider{flex:1;-webkit-appearance:none;height:3px;background:#1e2a3a;border-radius:2px;outline:none;}
+    .slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#00d4ff;cursor:pointer;box-shadow:0 0 8px #00d4ff66;}
+    .slider-val{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#00d4ff;min-width:52px;text-align:right;}
+    .ambient-val{min-width:150px;}
+    .ambient-meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;gap:8px;}
+    .ambient-lux{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;}
+    .ratio-badge{font-family:'IBM Plex Mono',monospace;font-size:10px;background:#051020;border:1px solid #1e3a50;padding:3px 10px;border-radius:4px;color:#00d4ff;letter-spacing:.05em;}
+    .result-card{background:#0a1220;border:1px solid #1e2a3a;border-radius:10px;padding:28px;margin-top:8px;}
+    .lux-display{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+    .lux-number{font-family:'IBM Plex Mono',monospace;font-size:52px;font-weight:600;line-height:1;color:#00d4ff;letter-spacing:-.03em;}
+    .lux-unit{font-family:'IBM Plex Mono',monospace;font-size:16px;color:#475569;}
+    .lux-breakdown{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;margin-bottom:8px;display:flex;gap:10px;flex-wrap:wrap;}
+    .lux-breakdown-sep{color:#1e2a3a;}
+    .lux-tag{font-size:12px;font-weight:500;padding:3px 10px;border-radius:20px;background:#0f1724;border:1px solid currentColor;display:inline-block;margin-bottom:24px;}
+    .divider{border:none;border-top:1px solid #1e2a3a;margin:20px 0;}
+    .params-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+    .param-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:#475569;text-transform:uppercase;margin-bottom:4px;}
+    .param-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:#f1f5f9;}
+    .param-sub{font-size:11px;color:#475569;margin-top:2px;}
+    .ev-bar-wrap{margin-top:20px;}
+    .ev-scale{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#334155;margin-bottom:4px;}
+    .ev-bar-bg{height:6px;background:#1e2a3a;border-radius:3px;overflow:hidden;}
+    .ev-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#818cf8,#00d4ff,#84cc16,#f97316);transition:width .3s ease;}
+    .ev-label-row{display:flex;justify-content:space-between;font-size:10px;color:#334155;margin-top:4px;}
+    .warn{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#f97316;padding:10px 14px;border:1px solid #7c2d12;border-radius:6px;margin-top:16px;background:#1c0a00;}
+    .loss-hint{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#475569;margin-top:10px;line-height:1.6;}
+    .loss-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #111827;}
+    .loss-total{display:flex;justify-content:space-between;padding-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#94a3b8;}
+
+    /* Eigene Eintraege */
+    .custom-section{margin-top:32px;border-top:1px solid #1e2a3a;padding-top:20px;}
+    .toggle-btn{width:100%;background:#0a1118;border:1px solid #1e2a3a;border-radius:6px;color:#94a3b8;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:11px 16px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:border-color .15s;}
+    .toggle-btn:hover{border-color:#00d4ff;color:#00d4ff;}
+    .toggle-arrow{color:#00d4ff;font-size:10px;}
+    .custom-panel{background:#0a1118;border:1px solid #1e2a3a;border-radius:8px;padding:16px;margin-top:8px;}
+    .tab-bar{display:flex;gap:6px;margin-bottom:16px;}
+    .tab-btn{flex:1;background:#0f1724;border:1px solid #1e2a3a;border-radius:5px;color:#475569;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:8px;cursor:pointer;transition:all .15s;}
+    .tab-btn.active{border-color:#00d4ff;color:#00d4ff;background:#051020;}
+    .form-row{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin-bottom:12px;}
+    .form-row .input,.form-row .select{flex:1;min-width:130px;}
+    .form-narrow{flex:0 0 130px !important;min-width:0 !important;}
+    .add-btn{flex-shrink:0;background:#051a30;border:1px solid #00d4ff;border-radius:5px;color:#00d4ff;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;padding:0 16px;cursor:pointer;white-space:nowrap;transition:background .15s;}
+    .add-btn:hover{background:#0a2a40;}
+    .entry-list{display:flex;flex-direction:column;gap:4px;margin-top:4px;}
+    .entry-item{display:flex;align-items:center;gap:8px;padding:7px 10px;background:#0f1724;border:1px solid #1a2535;border-radius:5px;}
+    .entry-name{flex:1;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#e2e8f0;}
+    .entry-meta{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#475569;white-space:nowrap;}
+    .del-btn{background:none;border:1px solid #2d1a1a;border-radius:4px;color:#4d2020;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 8px;cursor:pointer;transition:all .15s;flex-shrink:0;}
+    .del-btn:hover{border-color:#ef4444;color:#ef4444;}
+    .entry-empty{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#2a3a50;padding:10px 0;text-align:center;}
+    .form-hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:#334155;margin-bottom:10px;line-height:1.5;}
+
+    @media(max-width:500px){
+      .grid-2,.params-grid{grid-template-columns:1fr;}
+      .lux-number{font-size:38px;}
+      .form-row{flex-direction:column;}
+      .form-narrow{flex:1 !important;width:100% !important;}
+      .add-btn{padding:10px;}
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+
+    const BEAM_PRESETS = [
+      { label: "Sehr breit (Dome / Softbox)", beamFactor: 0.65 },
+      { label: "Breit (Bare Bulb)",           beamFactor: 1.00 },
+      { label: "Mittel (Reflektor)",          beamFactor: 1.60 },
+      { label: "Eng (Fresnel)",               beamFactor: 2.20 },
+      { label: "Sehr eng (Spotlight)",        beamFactor: 3.50 },
+    ];
+
+    function calcLux(lumens, distance, modFactor, beamFactor, domeFactor, diffFactor) {
+      return (lumens * modFactor * beamFactor * domeFactor * diffFactor) / (distance * distance);
+    }
+    function luxToEV(lux, iso) {
+      return Math.log2((Math.max(0.01, lux) * iso) / (12.5 * 250));
+    }
+    function evToAperture(ev, shutterVal, iso) { return Math.sqrt(Math.pow(2, ev) * shutterVal * (iso / 100)); }
+    function findClosestAperture(n) { return window.LC_APERTURES.reduce((p,c) => Math.abs(c-n) < Math.abs(p-n) ? c : p); }
+    function fToTStop(f) { return (f * 1.1).toFixed(1); }
+    function luxLabel(lux) {
+      if (lux > 50000) return { text: "Hartes Tageslicht-Aequivalent", color: "#f97316" };
+      if (lux > 10000) return { text: "Helles Studio / HMI-Bereich",   color: "#eab308" };
+      if (lux > 3000)  return { text: "Normales Studiolicht",           color: "#84cc16" };
+      if (lux > 500)   return { text: "Weiches Portraitlicht",          color: "#22d3ee" };
+      return                  { text: "Sehr weiches / schwaches Licht", color: "#818cf8" };
+    }
+    function loadLS(key) {
+      try { return JSON.parse(localStorage.getItem(key) || "[]"); } catch { return []; }
+    }
+    function saveLS(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+    function App() {
+      const [lampId,     setLampId]     = useState("aputure_300d2");
+      const [customLm,   setCustomLm]   = useState(15000);
+      const [modId,      setModId]      = useState("ap_dome2");
+      const [domeDiffId, setDomeDiffId] = useState("inner");
+      const [diffId,     setDiffId]     = useState("none");
+      const [distance,   setDistance]   = useState(2.0);
+      const [dimmer,     setDimmer]     = useState(100);
+      const [iso,        setIso]        = useState(800);
+      const [shutterIdx, setShutterIdx] = useState(10);
+      const [ambientIdx, setAmbientIdx] = useState(0);
+
+      // Eigene Eintraege (localStorage)
+      const [userLamps, setUserLamps]   = useState(() => loadLS("lc_lamps"));
+      const [userMods,  setUserMods]    = useState(() => loadLS("lc_mods"));
+      const [showPanel, setShowPanel]   = useState(false);
+      const [activeTab, setActiveTab]   = useState("lamps");
+
+      // Formular-State Lampe
+      const [fLampName,   setFLampName]   = useState("");
+      const [fLampLumens, setFLampLumens] = useState("");
+
+      // Formular-State Lichtformer
+      const [fModName,     setFModName]     = useState("");
+      const [fModFactor,   setFModFactor]   = useState("0.70");
+      const [fModBeamIdx,  setFModBeamIdx]  = useState(2);
+
+      const allLamps = useMemo(() => {
+        const statics = window.LC_LAMPS.filter(l => l.id !== "custom");
+        const manual  = window.LC_LAMPS.find(l => l.id === "custom");
+        return [...statics, ...userLamps, manual];
+      }, [userLamps]);
+
+      const allMods = useMemo(() => [...window.LC_MODIFIERS, ...userMods], [userMods]);
+
+      function addLamp() {
+        if (!fLampName.trim() || !fLampLumens) return;
+        const item = { id: `ul_${Date.now()}`, label: fLampName.trim(), lumens: Number(fLampLumens) };
+        const next = [...userLamps, item];
+        setUserLamps(next); saveLS("lc_lamps", next);
+        setFLampName(""); setFLampLumens("");
+      }
+      function removeLamp(id) {
+        const next = userLamps.filter(l => l.id !== id);
+        setUserLamps(next); saveLS("lc_lamps", next);
+        if (lampId === id) setLampId("aputure_300d2");
+      }
+      function addMod() {
+        if (!fModName.trim()) return;
+        const bp = BEAM_PRESETS[fModBeamIdx];
+        const item = {
+          id: `um_${Date.now()}`, label: fModName.trim(),
+          factor: Math.min(1, Math.max(0.01, Number(fModFactor))),
+          beamFactor: bp.beamFactor, domeDiffusion: false,
+        };
+        const next = [...userMods, item];
+        setUserMods(next); saveLS("lc_mods", next);
+        setFModName(""); setFModFactor("0.70"); setFModBeamIdx(2);
+      }
+      function removeMod(id) {
+        const next = userMods.filter(m => m.id !== id);
+        setUserMods(next); saveLS("lc_mods", next);
+        if (modId === id) setModId("bare");
+      }
+
+      const lamp          = allLamps.find(l => l.id === lampId) || allLamps[0];
+      const modifier      = allMods.find(m => m.id === modId)   || allMods[0];
+      const domeDiff      = window.LC_DOME_DIFFUSIONS.find(d => d.id === domeDiffId);
+      const extDiff       = window.LC_DIFFUSIONS.find(d => d.id === diffId);
+      const shutter       = window.LC_SHUTTERS[shutterIdx];
+      const ambientPreset = window.LC_AMBIENT_PRESETS[ambientIdx];
+      const ambientLux    = ambientPreset.lux;
+
+      const domeFactor = modifier.domeDiffusion ? domeDiff.factor : 1.0;
+
+      const effectiveLumens = useMemo(() => {
+        const base = lamp.id === "custom" ? customLm : lamp.lumens;
+        return (base || 0) * (dimmer / 100);
+      }, [lamp, customLm, dimmer]);
+
+      const lampLux = useMemo(() =>
+        calcLux(effectiveLumens, distance, modifier.factor, modifier.beamFactor, domeFactor, extDiff.factor),
+        [effectiveLumens, distance, modifier, domeFactor, extDiff]
+      );
+
+      const totalLux      = lampLux + ambientLux;
+      const ev            = useMemo(() => luxToEV(totalLux, iso), [totalLux, iso]);
+      const exactAperture = useMemo(() => evToAperture(ev, shutter.val, iso), [ev, shutter, iso]);
+      const closestF      = useMemo(() => findClosestAperture(exactAperture), [exactAperture]);
+      const tStop         = fToTStop(exactAperture);
+      const luxInfo       = luxLabel(totalLux);
+      const evPct         = Math.max(0, Math.min(100, (ev / 20) * 100));
+
+      const lightRatio = ambientLux > 0 && lampLux > 0
+        ? (lampLux >= ambientLux
+            ? `${(lampLux / ambientLux).toFixed(1)} : 1`
+            : `1 : ${(ambientLux / lampLux).toFixed(1)}`)
+        : null;
+
+      const lossModifier = -(Math.log2(modifier.factor * modifier.beamFactor)).toFixed(2);
+      const lossDome     = modifier.domeDiffusion && domeDiff.factor < 1 ? -(Math.log2(domeDiff.factor)).toFixed(2) : null;
+      const lossDiff     = diffId !== "none" ? -(Math.log2(extDiff.factor)).toFixed(2) : null;
+      const lossDimmer   = dimmer < 100 ? -(Math.log2(dimmer / 100)).toFixed(2) : null;
+      const lossTotal    = (
+        parseFloat(lossModifier) +
+        (lossDome   ? parseFloat(lossDome)   : 0) +
+        (lossDiff   ? parseFloat(lossDiff)   : 0) +
+        (lossDimmer ? parseFloat(lossDimmer) : 0)
+      ).toFixed(2);
+
+      return (
+        <div className="app">
+          <div className="header">
+            <div className="header-eyebrow">Photometric Calculator &middot; LED</div>
+            <h1>Light<span>Calc</span></h1>
+          </div>
+
+          {/* Lichtquelle */}
+          <div className="section">
+            <div className="section-label">Lichtquelle</div>
+            <select className="select" value={lampId} onChange={e => setLampId(e.target.value)}>
+              {allLamps.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
+            </select>
+          </div>
+
+          {lamp.id === "custom" && (
+            <div className="section">
+              <div className="section-label">Lumen (eigener Wert)</div>
+              <input className="input" type="number" value={customLm}
+                onChange={e => setCustomLm(Number(e.target.value))} />
+            </div>
+          )}
+
+          {/* Dimmer */}
+          <div className="section">
+            <div className="section-label">Dimmer</div>
+            <div className="slider-wrap">
+              <input type="range" className="slider" min={1} max={100} value={dimmer}
+                onChange={e => setDimmer(Number(e.target.value))} />
+              <span className="slider-val">{dimmer}%</span>
+            </div>
+          </div>
+
+          {/* Lichtformer */}
+          <div className="section">
+            <div className="section-label">Lichtformer</div>
+            <select className="select" value={modId} onChange={e => setModId(e.target.value)}>
+              {allMods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+            </select>
+            {modifier.domeDiffusion && (
+              <div className="diffusion-block" style={{marginTop:10}}>
+                <div className="section-sublabel">Dome-Diffusionsstoff</div>
+                <select className="select" value={domeDiffId} onChange={e => setDomeDiffId(e.target.value)}>
+                  {window.LC_DOME_DIFFUSIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Externe Diffusion */}
+          <div className="section">
+            <div className="section-label">Externe Diffusion / Gel</div>
+            <div className="diffusion-block">
+              <select className="select" value={diffId} onChange={e => setDiffId(e.target.value)}>
+                {window.LC_DIFFUSIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
+              </select>
+              {diffId !== "none" && (
+                <div className="diff-badge">
+                  Lichtverlust: <span>-{Math.abs(Math.log2(extDiff.factor)).toFixed(2)} Blenden</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Abstand */}
+          <div className="section">
+            <div className="section-label">Abstand zum Motiv</div>
+            <div className="slider-wrap">
+              <input type="range" className="slider" min={0.3} max={15} step={0.1}
+                value={distance} onChange={e => setDistance(Number(e.target.value))} />
+              <span className="slider-val">{distance.toFixed(1)} m</span>
+            </div>
+          </div>
+
+          {/* Umgebungslicht */}
+          <div className="section">
+            <div className="section-label">Umgebungslicht (Ambient)</div>
+            <div className="slider-wrap">
+              <input type="range" className="slider"
+                min={0} max={window.LC_AMBIENT_PRESETS.length - 1} step={1}
+                value={ambientIdx} onChange={e => setAmbientIdx(Number(e.target.value))} />
+              <span className="slider-val ambient-val">{ambientPreset.label}</span>
+            </div>
+            <div className="ambient-meta">
+              <span className="ambient-lux">
+                {ambientPreset.lux > 0
+                  ? `${ambientPreset.lux.toLocaleString("de-DE")} lux`
+                  : "0 lux"}
+              </span>
+              {lightRatio && (
+                <span className="ratio-badge">Licht : Ambient = {lightRatio}</span>
+              )}
+            </div>
+          </div>
+
+          {/* ISO + Verschlusszeit */}
+          <div className="section grid-2">
+            <div>
+              <div className="section-label">ISO</div>
+              <select className="select" value={iso} onChange={e => setIso(Number(e.target.value))}>
+                {window.LC_ISO_VALUES.map(v => <option key={v} value={v}>ISO {v}</option>)}
+              </select>
+            </div>
+            <div>
+              <div className="section-label">Verschlusszeit</div>
+              <select className="select" value={shutterIdx} onChange={e => setShutterIdx(Number(e.target.value))}>
+                {window.LC_SHUTTERS.map((s,i) => <option key={i} value={i}>{s.label}s</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Ergebnis */}
+          <div className="result-card">
+            <div className="lux-display">
+              <span className="lux-number">{Math.round(totalLux).toLocaleString("de-DE")}</span>
+              <span className="lux-unit">lux</span>
+            </div>
+            {ambientLux > 0 && (
+              <div className="lux-breakdown">
+                <span>Lampe: {Math.round(lampLux).toLocaleString("de-DE")} lux</span>
+                <span className="lux-breakdown-sep">+</span>
+                <span>Ambient: {ambientLux.toLocaleString("de-DE")} lux</span>
+              </div>
+            )}
+            <span className="lux-tag" style={{color: luxInfo.color}}>{luxInfo.text}</span>
+
+            <div className="params-grid">
+              <div>
+                <div className="param-label">Blende (Foto)</div>
+                <div className="param-value">f/{closestF}</div>
+                <div className="param-sub">exakt f/{exactAperture.toFixed(2)}</div>
+              </div>
+              <div>
+                <div className="param-label">T-Stop (Video)</div>
+                <div className="param-value">T/{tStop}</div>
+                <div className="param-sub">ca. +1/3 EV Linsenverlust</div>
+              </div>
+              <div>
+                <div className="param-label">EV (Belichtungswert)</div>
+                <div className="param-value">{ev.toFixed(1)}</div>
+                <div className="param-sub">bei ISO {iso}, {shutter.label}s</div>
+              </div>
+              <div>
+                <div className="param-label">Eff. Lumen</div>
+                <div className="param-value">{Math.round(effectiveLumens).toLocaleString("de-DE")}</div>
+                <div className="param-sub">nach Dimmer</div>
+              </div>
+            </div>
+
+            <hr className="divider" />
+
+            <div className="loss-hint">
+              <div className="loss-row"><span>Lichtformer</span><span>-{lossModifier} Bl.</span></div>
+              {lossDome   && <div className="loss-row"><span>Dome-Diffusion</span><span>-{lossDome} Bl.</span></div>}
+              {lossDiff   && <div className="loss-row"><span>{extDiff.label}</span><span>-{lossDiff} Bl.</span></div>}
+              {lossDimmer && <div className="loss-row"><span>Dimmer ({dimmer}%)</span><span>-{lossDimmer} Bl.</span></div>}
+              <div className="loss-total"><span>Gesamtverlust</span><span>-{lossTotal} Bl.</span></div>
+            </div>
+
+            <hr className="divider" />
+
+            <div className="ev-bar-wrap">
+              <div className="ev-scale">
+                <span>EV 0 &ndash; Nacht</span><span>EV 10 &ndash; Innenraum</span><span>EV 20 &ndash; Sonne</span>
+              </div>
+              <div className="ev-bar-bg">
+                <div className="ev-bar-fill" style={{width: `${evPct}%`}} />
+              </div>
+              <div className="ev-label-row">
+                <span>dunkel</span>
+                <span style={{color:"#00d4ff"}}>EV {ev.toFixed(1)}</span>
+                <span>hell</span>
+              </div>
+            </div>
+
+            {ev < 3  && <div className="warn">Unterbelichtung &mdash; Licht naeher, Dimmer hoch, ISO erhoehen oder offener blenden.</div>}
+            {ev > 17 && <div className="warn">Ueberbelichtung &mdash; Licht weiter weg, ND-Filter oder abblenden.</div>}
+          </div>
+
+          {/* Eigene Eintraege */}
+          <div className="custom-section">
+            <button className="toggle-btn" onClick={() => setShowPanel(s => !s)}>
+              <span>Eigene Eintraege verwalten</span>
+              <span className="toggle-arrow">{showPanel ? "▲" : "▼"}</span>
+            </button>
+
+            {showPanel && (
+              <div className="custom-panel">
+                <div className="tab-bar">
+                  <button className={`tab-btn${activeTab === "lamps" ? " active" : ""}`}
+                    onClick={() => setActiveTab("lamps")}>Lampen</button>
+                  <button className={`tab-btn${activeTab === "mods" ? " active" : ""}`}
+                    onClick={() => setActiveTab("mods")}>Lichtformer</button>
+                </div>
+
+                {activeTab === "lamps" && (
+                  <div>
+                    <div className="form-hint">Name + Lumen-Angabe aus Datenblatt</div>
+                    <div className="form-row">
+                      <input className="input" placeholder="Name (z.B. Godox SZ150R)" value={fLampName}
+                        onChange={e => setFLampName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addLamp()} />
+                      <input className="input form-narrow" type="number" placeholder="Lumen"
+                        value={fLampLumens} onChange={e => setFLampLumens(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addLamp()} />
+                      <button className="add-btn" onClick={addLamp}>+ Hinzufuegen</button>
+                    </div>
+                    <div className="entry-list">
+                      {userLamps.length === 0 && <div className="entry-empty">Noch keine eigenen Lampen gespeichert</div>}
+                      {userLamps.map(l => (
+                        <div key={l.id} className="entry-item">
+                          <span className="entry-name">{l.label}</span>
+                          <span className="entry-meta">{Number(l.lumens).toLocaleString("de-DE")} lm</span>
+                          <button className="del-btn" onClick={() => removeLamp(l.id)}>x</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "mods" && (
+                  <div>
+                    <div className="form-hint">
+                      Effizienz: Anteil des Lichts der ankommt (0.10 = 10%, 1.00 = 100%) &mdash; Strahl: wie stark das Licht gebuendelt wird
+                    </div>
+                    <div className="form-row">
+                      <input className="input" placeholder="Name (z.B. Meine Octabox)" value={fModName}
+                        onChange={e => setFModName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && addMod()} />
+                      <input className="input form-narrow" type="number" step="0.05" min="0.05" max="1.00"
+                        placeholder="Effizienz 0.05–1.00" value={fModFactor}
+                        onChange={e => setFModFactor(e.target.value)} />
+                      <select className="select form-narrow" value={fModBeamIdx}
+                        onChange={e => setFModBeamIdx(Number(e.target.value))}>
+                        {BEAM_PRESETS.map((b,i) => <option key={i} value={i}>{b.label}</option>)}
+                      </select>
+                      <button className="add-btn" onClick={addMod}>+ Hinzufuegen</button>
+                    </div>
+                    <div className="entry-list">
+                      {userMods.length === 0 && <div className="entry-empty">Noch keine eigenen Lichtformer gespeichert</div>}
+                      {userMods.map(m => (
+                        <div key={m.id} className="entry-item">
+                          <span className="entry-name">{m.label}</span>
+                          <span className="entry-meta">{(m.factor * 100).toFixed(0)}% eff. &middot; Strahl x{m.beamFactor}</span>
+                          <button className="del-btn" onClick={() => removeMod(m.id)}>x</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
