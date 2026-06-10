@@ -61,11 +61,12 @@ window.LC_APERTURES = [1.0,1.2,1.4,1.7,2.0,2.4,2.8,3.3,4.0,4.8,5.6,6.7,8,9.5,11,
 
 window.LC_SHUTTERS = [
   {label:"1/8000",val:1/8000},{label:"1/4000",val:1/4000},{label:"1/2000",val:1/2000},
-  {label:"1/1000",val:1/1000},{label:"1/500",val:1/500},{label:"1/250",val:1/250},
-  {label:"1/200",val:1/200},{label:"1/125",val:1/125},{label:"1/100",val:1/100},
-  {label:"1/60",val:1/60},{label:"1/50",val:1/50},{label:"1/30",val:1/30},
-  {label:"1/25",val:1/25},{label:"1/15",val:1/15},{label:"1/8",val:1/8},
-  {label:"1/4",val:1/4},{label:"1/2",val:1/2},{label:"1s",val:1},
+  {label:"1/1600",val:1/1600},{label:"1/1000",val:1/1000},{label:"1/800",val:1/800},
+  {label:"1/500",val:1/500},{label:"1/250",val:1/250},{label:"1/200",val:1/200},
+  {label:"1/125",val:1/125},{label:"1/100",val:1/100},{label:"1/60",val:1/60},
+  {label:"1/50",val:1/50},{label:"1/30",val:1/30},{label:"1/25",val:1/25},
+  {label:"1/15",val:1/15},{label:"1/8",val:1/8},{label:"1/4",val:1/4},
+  {label:"1/2",val:1/2},{label:"1s",val:1},
 ];
 
 window.LC_ISO_VALUES = [100,200,400,800,1600,3200,6400,12800];
